@@ -10,8 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.imatech.cursomc.domain.ItemPedido;
 import br.com.imatech.cursomc.domain.PagamentoComBoleto;
 import br.com.imatech.cursomc.domain.Pedido;
-import br.com.imatech.cursomc.domain.Produto;
 import br.com.imatech.cursomc.domain.enums.EstadoPagamento;
+import br.com.imatech.cursomc.repositories.ClienteRepository;
 import br.com.imatech.cursomc.repositories.ItemPedidoRepository;
 import br.com.imatech.cursomc.repositories.PagamentoRepository;
 import br.com.imatech.cursomc.repositories.PedidoRepository;
@@ -36,6 +36,8 @@ public class PedidoService {
 	@Autowired
 	private ProdutoService produtoService;
 	
+	@Autowired
+	private ClienteService clienteService;
 	
 	public Pedido find(Integer id) {
 		Optional<Pedido> obj = repo.findById(id);
@@ -46,6 +48,7 @@ public class PedidoService {
 	public Pedido insert(Pedido obj) {
 		obj.setId(null);
 		obj.setInstante(new Date());
+		obj.setCliente(clienteService.find(obj.getCliente().getId()));
 		obj.getPagamento().setEstado(EstadoPagamento.PENDENTE);
 		obj.getPagamento().setPedido(obj);
 		if(obj.getPagamento() instanceof PagamentoComBoleto) {
@@ -56,10 +59,12 @@ public class PedidoService {
 		pagamentoRepository.save(obj.getPagamento());
 		for(ItemPedido ip : obj.getItens()) {
 			ip.setDesconto(0.0);
-			ip.setPreco(produtoService.find(ip.getProduto().getId()).getPreco());
+			ip.setProduto(produtoService.find(ip.getProduto().getId()));
+			ip.setPreco(ip.getProduto().getPreco());
 			ip.setPedido(obj);
 		}
 		itemPedidoRepository.saveAll(obj.getItens());
+		System.out.println(obj);
 		return obj;
 		
 		
